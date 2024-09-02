@@ -1,0 +1,25 @@
+{
+    "files.autoSave": "off",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 1,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[typescriptreact]": {
+     "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+     "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "terminal.integrated.automationProfile.linux": {
+     "path": "bash",
+     "args": ["-l"]
+    },
+    "terminal.integrated.automationProfile.osx": {
+     "path": "bash",
+     "args": ["-l"]
+    },
+    "[svg]": {
+     "editor.defaultFormatter": "jock.svg"
+    }
+}

@@ -1,0 +1,9 @@
+{
+ "recommendations": [
+  "dbaeumer.vscode-eslint",
+  "eamodio.gitlens",
+  "bradlc.vscode-tailwindcss",
+  "esbenp.prettier-vscode",
+  "naumovs.color-highlight"
+ ]
+}

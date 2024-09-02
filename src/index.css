@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+  .center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  height: 100%;
+}
+
+.ant-pagination .ant-pagination-item:hover {
+ background-color: transparent !important;
+}
+
+.ant-pagination .ant-pagination-item-active {
+ background-color: transparent;
+ border: none;
+}
+
+.ant-btn-primary:not([disabled]) {
+ @apply bg-dodgerBlue;
+}
+
+.ant-message-notice-content span {
+ font-family: Inter, Noto Sans Arabic, sans-serif;
+}
+
+.otp-login .ant-otp .ant-input{
+ width: 56px !important;
+ height: 56px !important;
+ background-color: white;
+}
+
+.custom-header .ag-header {
+ background-color: #FFFFFF; /* Your desired header color */
+}
+
+.custom-header .ag-header-cell {
+ color: #64748B; /* Text color in the header */
+ padding-top: 20px;
+}
+.custom-header .ag-header-cell-label {
+ justify-content: center; /* Center the text horizontally */
+
+}
+
+/* Customize the scrollbar */
+::-webkit-scrollbar {
+ width: 12px;
+}
+
+::-webkit-scrollbar-track {
+ background: #f1f1f1;
+ border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+ background: #16637F;
+ border-radius: 10px;
+ border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+ background: #555;
+}
+
+/* Optional: Customize the scrollbar for vertical scrollbars */
+::-webkit-scrollbar-thumb:vertical {
+ background: #16637F;
+ border-radius: 10px;
+ border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:vertical:hover {
+ background: #555;
+}
+
+/* Optional: Customize the scrollbar for horizontal scrollbars */
+::-webkit-scrollbar-thumb:horizontal {
+ background: #16637F;
+ border-radius: 10px;
+ border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:horizontal:hover {
+ background: #555;
+}
+
+/* Optional: Customize the scrollbar corner */
+::-webkit-scrollbar-corner {
+ background: #f1f1f1;
+ border-radius: 10px;
+}
