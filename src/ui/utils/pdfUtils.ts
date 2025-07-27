@@ -22,26 +22,28 @@ export const exportToPDF = async (record: TableRecord) => {
     
     <div style="margin-bottom: 30px;">
       <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">معلومات الطلب</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; direction: rtl;">
         <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; width: 150px;">رقم الطلب:</td>
-          <td style="padding: 12px; color: #1f2937;">${record.requestNumber}</td>
+          <td style="padding: 12px; font-weight: bold; color: #374151; width: 150px; text-align: right;">رقم الطلب:</td>
+          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
         </tr>
         <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151;">رابط الموقع:</td>
-          <td style="padding: 12px; color: #1f2937;">${record.siteLink}</td>
+          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
+          <td style="padding: 12px; color: #1f2937; text-align: right;">
+            <a href="${record.siteLink}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${record.siteLink}</a>
+          </td>
         </tr>
         <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151;">اسم الحي:</td>
-          <td style="padding: 12px; color: #1f2937;">${record.neighborhoodName}</td>
+          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
+          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
         </tr>
         <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151;">اسم الشارع:</td>
-          <td style="padding: 12px; color: #1f2937;">${record.streetName}</td>
+          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
+          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.streetName}</td>
         </tr>
         <tr>
-          <td style="padding: 12px; font-weight: bold; color: #374151;">عدد الصور:</td>
-          <td style="padding: 12px; color: #1f2937;">${record.images.length} صورة</td>
+          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">عدد الصور:</td>
+          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.images.length} صورة</td>
         </tr>
       </table>
     </div>
@@ -49,24 +51,24 @@ export const exportToPDF = async (record: TableRecord) => {
     ${
       record.images.length > 0
         ? `
-      <div>
-        <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصور المرفقة</h2>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-          ${record.images
-            .map(
-              (image, index) => `
-            <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-              <img src="${image}" alt="صورة ${index + 1}" style="width: 100%; height: 200px; object-fit: cover;" />
-              <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
-                صورة ${index + 1}
+        <div>
+          <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصور المرفقة</h2>
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            ${record.images
+              .map(
+                (image, index) => `
+              <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 600px;">
+                <img src="${image}" alt="صورة ${index + 1}" style="width: 100%; height: 300px; object-fit: cover;" />
+                <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
+                  صورة ${index + 1}
+                </div>
               </div>
-            </div>
-          `
-            )
-            .join("")}
+            `
+              )
+              .join("")}
+          </div>
         </div>
-      </div>
-    `
+      `
         : '<p style="color: #6b7280; font-style: italic;">لا توجد صور مرفقة</p>'
     }
   `;
@@ -79,14 +81,20 @@ export const exportToPDF = async (record: TableRecord) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
-        <html>
+        <html dir="rtl">
           <head>
             <title>تقرير ${record.requestNumber}</title>
             <style>
-              @media print {
-                body { margin: 0; }
-                .no-print { display: none; }
+              body { 
+                margin: 0; 
+                direction: rtl; 
+                text-align: right; 
+                font-family: Arial, sans-serif;
               }
+              .no-print { display: none; }
+              table { direction: rtl; }
+              td { text-align: right; }
+              a { color: #3b82f6; text-decoration: underline; }
             </style>
           </head>
           <body>
