@@ -1,37 +1,11 @@
-import statsApi from "./apis/sekaya";
 import { RuleObject } from "antd/es/form";
 import { AppShieldIncompleteIcon } from "./ui/icons/shield-incomplete-icon";
 import AppShieldCheckIcon from "./ui/icons/shield-check-icon";
 import { AppShieldFailedIcon } from "./ui/icons/shield-failed-icon";
 import { AppShieldPendingIcon } from "./ui/icons/shield-pending-icon";
 
-export const mobileRegex = /^(05)[0-9]{8}$/;
-
-export const storeAccessToken = (token: string) => {
-  sessionStorage.setItem("token", token);
-  statsApi.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-};
-
-export const removeAccessToken = () => {
-  sessionStorage.removeItem("token");
-  statsApi.defaults.headers.common["Authorization"] = null;
-};
-
-export const storeUserRole = (role: string) => {
-  sessionStorage.setItem("role", role);
-};
-
-export const removeRole = () => {
-  sessionStorage.removeItem("role");
-};
-
 export const pickTruthyKeys = (object: { [key: string]: unknown }) => {
   return JSON.parse(JSON.stringify(object));
-};
-
-export const changeLanguage = (locale: "ar" | "en") => {
-  localStorage.setItem("locale", locale);
-  statsApi.defaults.headers.common["Accept-Language"] = locale;
 };
 
 export const checkboxRequiredValidator = (

@@ -44,10 +44,29 @@ body {
  font-family: Inter, Noto Sans Arabic, sans-serif;
 }
 
-.otp-login .ant-otp .ant-input{
- width: 56px !important;
- height: 56px !important;
- background-color: white;
+/* RTL Support for Arabic */
+[dir="rtl"] .ant-form-item-label > label {
+  text-align: right;
+}
+
+[dir="rtl"] .ant-table-thead > tr > th {
+  text-align: right;
+}
+
+[dir="rtl"] .ant-table-tbody > tr > td {
+  text-align: right;
+}
+
+[dir="rtl"] .ant-upload-list-item-name {
+  text-align: right;
+}
+
+[dir="rtl"] .ant-modal-header {
+  text-align: right;
+}
+
+[dir="rtl"] .ant-modal-title {
+  text-align: right;
 }
 
 .custom-header .ag-header {

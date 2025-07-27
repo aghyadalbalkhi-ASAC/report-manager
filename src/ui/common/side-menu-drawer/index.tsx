@@ -3,11 +3,8 @@ import { useAtom } from "jotai";
 import { sideMenuDrawerAtom } from "./state";
 import { SideMenu } from "sekaya-components";
 import AppBriefcaseIcon from "src/ui/icons/briefcase-icon";
-import AppLogoutIcon from "src/ui/icons/logout-icon";
 import { useIntl } from "react-intl";
 import { useMatch, useNavigate } from "react-router-dom";
-import confirm from "antd/es/modal/confirm";
-import { removeAccessToken } from "src/helpers";
 import AppMenuIcon from "src/ui/icons/menu-icon";
 import AppLogo from "/images/applogo.png";
 
@@ -19,24 +16,6 @@ const SideMenuDrawer = () => {
   const isMainPage = useMatch("/index.html");
   const [state, setState] = useAtom(sideMenuDrawerAtom);
   const { open } = state;
-
-  const openLogoutConfirmation = () => {
-    confirm({
-      icon: null,
-      style: { direction: isArabic ? "rtl" : "ltr" },
-      content: formatMessage({ id: "logout_confirmation" }),
-      className: "font-sans",
-      okButtonProps: {
-        className: "bg-dodgerBlue font-sans",
-      },
-      okText: formatMessage({ id: "logout" }),
-      closable: true,
-      onOk() {
-        removeAccessToken();
-        navigate(0);
-      },
-    });
-  };
 
   const handleClose = () => {
     setState({ open: false });
@@ -73,14 +52,7 @@ const SideMenuDrawer = () => {
                 onClick: () => navigate("/"),
               },
             ]}
-            footerItems={[
-              {
-                key: "logout",
-                icon: <AppLogoutIcon />,
-                content: formatMessage({ id: "logout" }),
-                onClick: openLogoutConfirmation,
-              },
-            ]}
+            footerItems={[]}
           />
         </div>
       </div>
