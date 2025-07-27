@@ -17,4 +17,5 @@ export interface TableRecord {
   neighborhoodName: string;
   streetName: string;
   images: string[];
+  createdDate: string;
 }
