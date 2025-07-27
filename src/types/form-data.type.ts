@@ -18,4 +18,5 @@ export interface TableRecord {
   streetName: string;
   images: string[];
   createdDate: string;
+  onPreview?: (images: string[]) => void;
 }

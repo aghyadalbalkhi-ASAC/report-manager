@@ -1,4 +1,5 @@
-import { Table, Image } from "antd";
+import { Table, Button } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
 import { TableRecord } from "src/types/form-data.type";
 import { ActionButtons } from "./ActionButtons";
 
@@ -8,6 +9,14 @@ const TABLE_COLUMNS = [
     title: "رقم الطلب",
     dataIndex: "requestNumber",
     key: "requestNumber",
+  },
+  {
+    title: "تاريخ الإنشاء",
+    dataIndex: "createdDate",
+    key: "createdDate",
+    render: (date: string) => (
+      <span className="text-sm text-gray-600">{date}</span>
+    ),
   },
   {
     title: "رابط الموقع",
@@ -30,46 +39,32 @@ const TABLE_COLUMNS = [
     key: "streetName",
   },
   {
-    title: "تاريخ الإنشاء",
-    dataIndex: "createdDate",
-    key: "createdDate",
-    render: (date: string) => (
-      <span className="text-sm text-gray-600">{date}</span>
+    title: "عدد الصور",
+    dataIndex: "images",
+    key: "imageCount",
+    render: (images: string[]) => (
+      <span className="text-sm text-gray-600">{images.length} صورة</span>
     ),
   },
   {
     title: "صور",
     dataIndex: "images",
     key: "images",
-    render: (images: string[]) => {
+    render: (images: string[], record: TableRecord) => {
       if (images.length === 0) {
         return <span className="text-gray-400">لا توجد صور</span>;
       }
 
       return (
-        <div className="space-y-2">
-          <div className="text-sm text-gray-600">{images.length} صورة</div>
-          <div className="flex flex-wrap gap-1">
-            {images.slice(0, 3).map((image, index) => (
-              <div
-                key={index}
-                className="w-12 h-12 rounded border border-gray-200 overflow-hidden"
-              >
-                <Image
-                  src={image}
-                  alt={`صورة مصغرة ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  preview={false}
-                />
-              </div>
-            ))}
-            {images.length > 3 && (
-              <div className="w-12 h-12 rounded border border-gray-200 bg-gray-100 flex items-center justify-center text-xs text-gray-500">
-                +{images.length - 3}
-              </div>
-            )}
-          </div>
-        </div>
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => record.onPreview?.(images)}
+          disabled={images.length === 0}
+          size="small"
+        >
+          عرض
+        </Button>
       );
     },
   },
@@ -82,6 +77,12 @@ interface DataTableProps {
 }
 
 export const DataTable = ({ data, onPreview, onDelete }: DataTableProps) => {
+  // Add onPreview function to each record for the images column
+  const dataWithPreview = data.map((record) => ({
+    ...record,
+    onPreview,
+  }));
+
   const columns = [
     ...TABLE_COLUMNS,
     {
@@ -101,7 +102,7 @@ export const DataTable = ({ data, onPreview, onDelete }: DataTableProps) => {
     <div className="bg-white rounded-lg shadow-md">
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={dataWithPreview}
         pagination={false}
         className="rtl"
         rowClassName="hover:bg-gray-50"
