@@ -1,18 +1,28 @@
 import type { UploadFile } from "antd/es/upload/interface";
 import { FormData, TableRecord } from "src/types/form-data.type";
+import { uploadImagesToStorage } from "src/services/storageService";
 
-export const createImageUrls = (fileList: UploadFile[]): string[] => {
-  return fileList.map((file: UploadFile) =>
-    URL.createObjectURL(file.originFileObj as Blob)
-  );
+export const createImageUrls = async (
+  fileList: UploadFile[]
+): Promise<string[]> => {
+  try {
+    console.log("🔄 Uploading images to Firebase Storage...");
+    const imageUrls = await uploadImagesToStorage(fileList);
+    console.log("✅ Images uploaded successfully:", imageUrls);
+    return imageUrls;
+  } catch (error) {
+    console.error("❌ Error uploading images:", error);
+    throw error;
+  }
 };
 
-export const createTableRecord = (values: FormData): TableRecord => {
+export const createTableRecord = async (
+  values: FormData
+): Promise<Omit<TableRecord, "key">> => {
   const fileList = values.images?.fileList || [];
-  const imageUrls = createImageUrls(fileList);
+  const imageUrls = await createImageUrls(fileList);
 
   return {
-    key: Date.now().toString(),
     requestNumber: values.requestNumber,
     siteLink: values.siteLink,
     neighborhoodName: values.neighborhoodName,

@@ -5,7 +5,7 @@ import { exportToPDF } from "src/ui/utils/pdfUtils";
 
 interface ActionButtonsProps {
   record: TableRecord;
-  onDelete: (key: string) => void;
+  onDelete: (key: string) => Promise<void>;
 }
 
 export const ActionButtons = ({ record, onDelete }: ActionButtonsProps) => {
@@ -25,9 +25,12 @@ export const ActionButtons = ({ record, onDelete }: ActionButtonsProps) => {
       okText: "نعم، احذف",
       cancelText: "إلغاء",
       okType: "danger",
-      onOk() {
-        onDelete(record.key);
-        message.success("تم حذف الطلب بنجاح");
+      onOk: async () => {
+        try {
+          await onDelete(record.key);
+        } catch (error) {
+          // Error is already handled in the hook
+        }
       },
     });
   };

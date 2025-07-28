@@ -21,9 +21,10 @@ const FORM_RULES = {
 interface DataFormProps {
   form: FormInstance;
   onSave: (values: FormData) => void;
+  loading?: boolean;
 }
 
-export const DataForm = ({ form, onSave }: DataFormProps) => {
+export const DataForm = ({ form, onSave, loading = false }: DataFormProps) => {
   const handleUploadChange: UploadProps["onChange"] = (info) => {
     const { fileList } = info;
 
@@ -145,9 +146,11 @@ export const DataForm = ({ form, onSave }: DataFormProps) => {
             htmlType="submit"
             icon={<SaveOutlined />}
             size="large"
+            loading={loading}
+            disabled={loading}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            حفظ
+            {loading ? "جاري الحفظ..." : "حفظ"}
           </Button>
         </div>
       </Form>

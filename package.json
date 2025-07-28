@@ -1,5 +1,5 @@
 {
- "name": "ilfen-frontend",
+ "name": "report-manager",
  "private": true,
  "version": "0.0.0",
  "type": "module",
@@ -31,7 +31,8 @@
   "runes2": "^1.1.4",
   "sekaya-components": "^1.0.35",
   "tailwind-scrollbar-hide": "^1.1.7",
-  "uuid": "^9.0.1"
+  "uuid": "^9.0.1",
+  "xlsx": "^0.18.5"
  },
  "devDependencies": {
   "@types/device-uuid": "^1.0.3",
