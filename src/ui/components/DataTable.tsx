@@ -20,6 +20,22 @@ const TABLE_COLUMNS = [
     key: "requestNumber",
   },
   {
+    title: "تاريخ الإنشاء",
+    dataIndex: "createdDate",
+    key: "createdDate",
+  },
+
+  {
+    title: "اسم الحي",
+    dataIndex: "neighborhoodName",
+    key: "neighborhoodName",
+  },
+  {
+    title: "اسم الشارع",
+    dataIndex: "streetName",
+    key: "streetName",
+  },
+  {
     title: "رابط الموقع",
     dataIndex: "siteLink",
     key: "siteLink",
@@ -33,21 +49,6 @@ const TABLE_COLUMNS = [
         {text}
       </a>
     ),
-  },
-  {
-    title: "اسم الحي",
-    dataIndex: "neighborhoodName",
-    key: "neighborhoodName",
-  },
-  {
-    title: "اسم الشارع",
-    dataIndex: "streetName",
-    key: "streetName",
-  },
-  {
-    title: "تاريخ الإنشاء",
-    dataIndex: "createdDate",
-    key: "createdDate",
   },
   {
     title: "ملف PDF",

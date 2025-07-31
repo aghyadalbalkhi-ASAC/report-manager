@@ -8,7 +8,7 @@ export const exportToExcel = (data: TableRecord[]) => {
 
     // Find the maximum number of images across all records
     const maxImages = Math.max(
-      ...data.map((record) => record.images.length),
+      ...data.map((record) => record.images?.length || 0),
       0
     );
 
@@ -20,13 +20,13 @@ export const exportToExcel = (data: TableRecord[]) => {
         "رابط الموقع": record.siteLink,
         "اسم الحي": record.neighborhoodName,
         "اسم الشارع": record.streetName,
-        "عدد الصور": record.images.length,
+        "عدد الصور": record.images?.length || 0,
       };
 
       // Add image columns
       const imageColumns: Record<string, string> = {};
       for (let i = 0; i < maxImages; i++) {
-        imageColumns[`صورة ${i + 1}`] = record.images[i] || "";
+        imageColumns[`صورة ${i + 1}`] = record.images?.[i] || "";
       }
 
       return { ...baseData, ...imageColumns };
@@ -54,7 +54,7 @@ export const exportToExcel = (data: TableRecord[]) => {
         const imageIndex = col - imageColumnStart;
         const record = data[row - 1];
 
-        if (record && record.images[imageIndex]) {
+        if (record && record.images && record.images[imageIndex]) {
           // Add hyperlink to the cell
           if (!worksheet[cellAddress]) {
             worksheet[cellAddress] = { v: record.images[imageIndex] };
@@ -130,7 +130,7 @@ export const exportToExcelHTML = (data: TableRecord[]) => {
 
     // Find the maximum number of images across all records
     const maxImages = Math.max(
-      ...data.map((record) => record.images.length),
+      ...data.map((record) => record.images?.length || 0),
       0
     );
 
@@ -177,12 +177,14 @@ export const exportToExcelHTML = (data: TableRecord[]) => {
                   <td><a href="${record.siteLink}" target="_blank">${record.siteLink}</a></td>
                   <td>${record.neighborhoodName}</td>
                   <td>${record.streetName}</td>
-                  <td>${record.images.length}</td>
-                  ${Array.from({ length: maxImages }, (_, i) =>
-                    record.images[i]
-                      ? `<td><a href="${record.images[i]}" target="_blank">${record.images[i]}</a></td>`
-                      : `<td></td>`
-                  ).join("")}
+                  <td>${record.images?.length || 0}</td>
+                                    ${Array.from(
+                                      { length: maxImages },
+                                      (_, i) =>
+                                        record.images?.[i]
+                                          ? `<td><a href="${record.images?.[i]}" target="_blank">${record.images?.[i]}</a></td>`
+                                          : `<td></td>`
+                                    ).join("")}
                 </tr>
               `
                 )
