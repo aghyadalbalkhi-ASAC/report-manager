@@ -6,36 +6,31 @@ import {
   doc,
   query,
   orderBy,
-  QueryDocumentSnapshot,
-  DocumentData,
 } from "firebase/firestore";
 import { FirebaseError } from "firebase/app";
 import { db } from "../config/firebase";
-import { TableRecord } from "../types/form-data.type";
-import { deleteImagesFromStorage } from "./storageService";
+import { TableRecord } from "src/types/form-data.type";
 
 const COLLECTION_NAME = "reports";
 
 // Add a new record to Firebase
-export const addRecordToFirebase = async (record: Omit<TableRecord, "key">) => {
+export const addRecordToFirebase = async (
+  record: Omit<TableRecord, "key">
+): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-      ...record,
-      createdAt: new Date(),
-    });
+    console.log("🔄 Adding record to Firebase...");
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), record);
+    console.log("✅ Record added successfully with ID:", docRef.id);
     return docRef.id;
   } catch (error: unknown) {
     if (error instanceof FirebaseError) {
-      console.error("❌ Error adding record to Firebase:", error);
-      console.error("Error details:", {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-      });
-      throw new Error(
-        `فشل في حفظ البيانات: ${error.message || "خطأ غير معروف"}`
-      );
+      console.error("❌ Firebase error adding record:", error);
+      throw new Error(`فشل في حفظ البيانات: ${error.message}`);
+    } else if (error instanceof Error) {
+      console.error("❌ Error adding record:", error);
+      throw new Error(`فشل في حفظ البيانات: ${error.message}`);
     } else {
+      console.error("❌ Unknown error adding record:", error);
       throw new Error("فشل في حفظ البيانات: خطأ غير معروف");
     }
   }
@@ -44,14 +39,15 @@ export const addRecordToFirebase = async (record: Omit<TableRecord, "key">) => {
 // Get all records from Firebase
 export const getRecordsFromFirebase = async (): Promise<TableRecord[]> => {
   try {
+    console.log("🔄 Getting records from Firebase...");
     const q = query(
       collection(db, COLLECTION_NAME),
-      orderBy("createdAt", "desc")
+      orderBy("createdDate", "desc")
     );
     const querySnapshot = await getDocs(q);
 
     const records: TableRecord[] = [];
-    querySnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+    querySnapshot.forEach((doc) => {
       const data = doc.data();
       records.push({
         key: doc.id,
@@ -59,53 +55,74 @@ export const getRecordsFromFirebase = async (): Promise<TableRecord[]> => {
         siteLink: data.siteLink,
         neighborhoodName: data.neighborhoodName,
         streetName: data.streetName,
-        images: data.images,
+        images: data.images || [],
         createdDate: data.createdDate,
+        pdfUrl: data.pdfUrl,
       });
     });
 
+    console.log("✅ Records retrieved successfully:", records.length);
     return records;
   } catch (error: unknown) {
     if (error instanceof FirebaseError) {
-      console.error("❌ Error getting records from Firebase:", error);
-      console.error("Error details:", {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-      });
-      throw new Error(
-        `فشل في جلب البيانات: ${error.message || "خطأ غير معروف"}`
-      );
+      console.error("❌ Firebase error getting records:", error);
+      throw new Error(`فشل في تحميل البيانات: ${error.message}`);
+    } else if (error instanceof Error) {
+      console.error("❌ Error getting records:", error);
+      throw new Error(`فشل في تحميل البيانات: ${error.message}`);
     } else {
-      throw new Error("فشل في جلب البيانات: خطأ غير معروف");
+      console.error("❌ Unknown error getting records:", error);
+      throw new Error("فشل في تحميل البيانات: خطأ غير معروف");
     }
   }
 };
 
 // Delete a record from Firebase
 export const deleteRecordFromFirebase = async (
-  recordId: string,
-  imageUrls: string[] = []
-) => {
+  key: string,
+  pdfUrl?: string
+): Promise<void> => {
   try {
-    // Delete the record from Firestore
-    await deleteDoc(doc(db, COLLECTION_NAME, recordId));
-    // Delete associated images from Storage if any
-    if (imageUrls.length > 0) {
-      await deleteImagesFromStorage(imageUrls);
+    console.log("🔄 Deleting record from Firebase...");
+
+    // Delete the document
+    await deleteDoc(doc(db, COLLECTION_NAME, key));
+    console.log("✅ Record deleted successfully");
+
+    // Delete the PDF from storage if it exists
+    if (pdfUrl) {
+      try {
+        const { deleteObject, ref } = await import("firebase/storage");
+        const { storage } = await import("../config/firebase");
+
+        // Extract the file path from the URL
+        const urlObj = new URL(pdfUrl);
+        const pathSegments = urlObj.pathname.split("/");
+        const filePath = pathSegments
+          .slice(pathSegments.indexOf("o") + 1)
+          .join("/");
+
+        // Decode the path
+        const decodedPath = decodeURIComponent(filePath);
+        const storageRef = ref(storage, decodedPath);
+
+        console.log("🔄 Deleting PDF from storage:", decodedPath);
+        await deleteObject(storageRef);
+        console.log("✅ PDF deleted successfully from storage");
+      } catch (storageError: unknown) {
+        console.error("❌ Error deleting PDF from storage:", storageError);
+        // Don't throw error for storage deletion failure
+      }
     }
   } catch (error: unknown) {
     if (error instanceof FirebaseError) {
-      console.error("❌ Error deleting record from Firebase:", error);
-      console.error("Error details:", {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-      });
-      throw new Error(
-        `فشل في حذف البيانات: ${error.message || "خطأ غير معروف"}`
-      );
+      console.error("❌ Firebase error deleting record:", error);
+      throw new Error(`فشل في حذف البيانات: ${error.message}`);
+    } else if (error instanceof Error) {
+      console.error("❌ Error deleting record:", error);
+      throw new Error(`فشل في حذف البيانات: ${error.message}`);
     } else {
+      console.error("❌ Unknown error deleting record:", error);
       throw new Error("فشل في حذف البيانات: خطأ غير معروف");
     }
   }

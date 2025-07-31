@@ -1,33 +1,17 @@
-import type { UploadFile } from "antd/es/upload/interface";
 import { FormData, TableRecord } from "src/types/form-data.type";
-import { uploadImagesToStorage } from "src/services/storageService";
-
-export const createImageUrls = async (
-  fileList: UploadFile[]
-): Promise<string[]> => {
-  try {
-    console.log("🔄 Uploading images to Firebase Storage...");
-    const imageUrls = await uploadImagesToStorage(fileList);
-    console.log("✅ Images uploaded successfully:", imageUrls);
-    return imageUrls;
-  } catch (error) {
-    console.error("❌ Error uploading images:", error);
-    throw error;
-  }
-};
+import { generateAndStorePDF } from "./pdfUtils";
 
 export const createTableRecord = async (
   values: FormData
 ): Promise<Omit<TableRecord, "key">> => {
   const fileList = values.images?.fileList || [];
-  const imageUrls = await createImageUrls(fileList);
 
-  return {
+  // Create record with image files (not URLs)
+  const record = {
     requestNumber: values.requestNumber,
     siteLink: values.siteLink,
     neighborhoodName: values.neighborhoodName,
     streetName: values.streetName,
-    images: imageUrls,
     createdDate: new Date().toLocaleString("ar-SA", {
       year: "numeric",
       month: "2-digit",
@@ -37,4 +21,27 @@ export const createTableRecord = async (
       second: "2-digit",
     }),
   };
+
+  // Generate and store PDF with images embedded
+  try {
+    console.log("🔄 Generating PDF for record...");
+    console.log(
+      "📁 File list:",
+      fileList.map((f) => f.name)
+    );
+    const pdfUrl = await generateAndStorePDF(record as TableRecord, fileList);
+    console.log("✅ PDF generated and stored:", pdfUrl);
+    return {
+      ...record,
+      pdfUrl,
+    };
+  } catch (error) {
+    console.error("❌ Error generating PDF:", error);
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    // Return record without PDF URL if PDF generation fails
+    return record;
+  }
 };

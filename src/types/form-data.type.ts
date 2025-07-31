@@ -16,7 +16,8 @@ export interface TableRecord {
   siteLink: string;
   neighborhoodName: string;
   streetName: string;
-  images: string[];
+  images?: string[]; // Optional - not stored in Firebase
   createdDate: string;
+  pdfUrl?: string;
   onPreview?: (images: string[]) => void;
 }

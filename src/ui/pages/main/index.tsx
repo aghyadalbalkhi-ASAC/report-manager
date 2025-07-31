@@ -20,8 +20,7 @@ const MainPage = () => {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const { data, loading, addRecord, deleteRecord } = useTableData();
-  const { previewVisible, previewImages, handlePreview, closePreview } =
-    useImagePreview();
+  const { previewVisible, previewImages, closePreview } = useImagePreview();
 
   const handleSave = useCallback(
     async (values: FormData) => {
@@ -63,11 +62,7 @@ const MainPage = () => {
         <DataForm form={form} onSave={handleSave} loading={saving} />
 
         <Spin spinning={loading} tip="جاري التحميل...">
-          <DataTable
-            data={data}
-            onPreview={handlePreview}
-            onDelete={deleteRecord}
-          />
+          <DataTable data={data} onDelete={deleteRecord} />
         </Spin>
       </div>
 

@@ -79,19 +79,26 @@ export const useTableData = () => {
 
   const deleteRecord = useCallback(
     async (key: string) => {
-      setLoading(true);
       try {
-        console.log("🔄 Deleting record from Firebase:", key);
-        // Find the record to get its image URLs
-        const recordToDelete = data.find((record) => record.key === key);
-        const imageUrls = recordToDelete?.images || [];
-        await deleteRecordFromFirebase(key, imageUrls);
-        setData((prev) => prev.filter((item) => item.key !== key));
-        message.success("تم حذف البيانات بنجاح");
+        setLoading(true);
+        console.log("🔄 Deleting record:", key);
+
+        // Find the record to get its pdfUrl
+        const record = data.find((item) => item.key === key);
+        if (!record) {
+          throw new Error("Record not found");
+        }
+
+        await deleteRecordFromFirebase(key, record.pdfUrl);
+        setData((prevData) => prevData.filter((item) => item.key !== key));
+        message.success("تم حذف السجل بنجاح");
       } catch (error: unknown) {
         console.error("❌ Error deleting record:", error);
-        const errMsg = error instanceof Error ? error.message : "خطأ غير معروف";
-        message.error(`فشل في حذف البيانات: ${errMsg}`);
+        let errMsg = "خطأ غير معروف";
+        if (error && typeof error === "object") {
+          errMsg = error instanceof Error ? error.message : errMsg;
+        }
+        message.error(`فشل في حذف السجل: ${errMsg}`);
       } finally {
         setLoading(false);
       }
