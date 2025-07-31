@@ -106,11 +106,11 @@ export const DataForm = ({ form, onSave, loading = false }: DataFormProps) => {
           <div className="lg:col-span-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Form.Item
-                name="streetName"
-                label="اسم الشارع"
-                rules={FORM_RULES.streetName}
+                name="requestNumber"
+                label="رقم الطلب / البلاغ"
+                rules={FORM_RULES.requestNumber}
               >
-                <Input placeholder="اسم الشارع" />
+                <Input placeholder="رقم الطلب / البلاغ" />
               </Form.Item>
 
               <Form.Item
@@ -120,6 +120,13 @@ export const DataForm = ({ form, onSave, loading = false }: DataFormProps) => {
               >
                 <Input placeholder="اسم الحي" />
               </Form.Item>
+              <Form.Item
+                name="streetName"
+                label="اسم الشارع"
+                rules={FORM_RULES.streetName}
+              >
+                <Input placeholder="اسم الشارع" />
+              </Form.Item>
 
               <Form.Item
                 name="siteLink"
@@ -127,14 +134,6 @@ export const DataForm = ({ form, onSave, loading = false }: DataFormProps) => {
                 rules={FORM_RULES.siteLink}
               >
                 <Input placeholder="رابط الموقع" />
-              </Form.Item>
-
-              <Form.Item
-                name="requestNumber"
-                label="رقم الطلب / البلاغ"
-                rules={FORM_RULES.requestNumber}
-              >
-                <Input placeholder="رقم الطلب / البلاغ" />
               </Form.Item>
             </div>
           </div>
