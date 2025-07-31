@@ -196,12 +196,6 @@ export const generateAndStorePDF = async (
 
     // Add images section
     if (validImages.length > 0) {
-      // Check if we need a new page for images section
-      if (currentY > pageHeight - margin - 30) {
-        pdf.addPage();
-        currentY = margin;
-      }
-
       // Create images section container
       const imagesContainer = document.createElement("div");
       imagesContainer.style.position = "absolute";
@@ -214,59 +208,54 @@ export const generateAndStorePDF = async (
       imagesContainer.style.direction = "rtl";
       imagesContainer.style.textAlign = "right";
 
-      imagesContainer.innerHTML = `
-      <div>
-        <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصور المرفقة</h2>
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          ${validImages
-            .map(
-              (image, index) => `
-              <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
-                <img src="${image}" alt="صورة ${index + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
-                <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
-                  صورة ${index + 1}
-                </div>
-              </div>
-            `
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
+      // Process each image individually on separate pages
+      for (let i = 0; i < validImages.length; i++) {
+        const image = validImages[i];
 
-      document.body.appendChild(imagesContainer);
-
-      // Convert images section to canvas
-      const imagesCanvas = await html2canvas(imagesContainer, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-      });
-
-      // Calculate images section dimensions
-      const imagesImgWidth = contentWidth;
-      const imagesImgHeight =
-        (imagesCanvas.height * imagesImgWidth) / imagesCanvas.width;
-
-      // Check if we need a new page for images
-      if (currentY + imagesImgHeight > pageHeight - margin) {
+        // Add a new page for each image
         pdf.addPage();
         currentY = margin;
+
+        imagesContainer.innerHTML = `
+          <div>
+            <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصورة ${i + 1}</h2>
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
+              <img src="${image}" alt="صورة ${i + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
+              <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
+                صورة ${i + 1}
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(imagesContainer);
+
+        // Convert image section to canvas
+        const imageCanvas = await html2canvas(imagesContainer, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+        });
+
+        // Calculate image dimensions to fit on the page
+        const imageImgWidth = contentWidth;
+        const imageImgHeight =
+          (imageCanvas.height * imageImgWidth) / imageCanvas.width;
+
+        // Add image to PDF
+        pdf.addImage(
+          imageCanvas,
+          "JPEG",
+          margin,
+          currentY,
+          imageImgWidth,
+          imageImgHeight
+        );
+
+        // Remove image container
+        document.body.removeChild(imagesContainer);
       }
-
-      // Add images section to PDF
-      pdf.addImage(
-        imagesCanvas,
-        "JPEG",
-        margin,
-        currentY,
-        imagesImgWidth,
-        imagesImgHeight
-      );
-
-      // Remove images container
-      document.body.removeChild(imagesContainer);
     } else {
       // Check if we need a new page for "no images" message
       if (currentY > pageHeight - margin - 20) {
@@ -287,8 +276,8 @@ export const generateAndStorePDF = async (
       noImagesContainer.style.textAlign = "right";
 
       noImagesContainer.innerHTML = `
-      <p style="color: #6b7280; font-style: italic;">لا توجد صور مرفقة</p>
-    `;
+        <p style="color: #6b7280; font-style: italic;">لا توجد صور مرفقة</p>
+      `;
 
       document.body.appendChild(noImagesContainer);
 
