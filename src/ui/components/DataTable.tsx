@@ -100,7 +100,12 @@ const handleSharePDF = async (record: TableRecord) => {
         return;
       } catch (urlShareError: unknown) {
         console.log("❌ URL sharing failed:", urlShareError);
-        if (urlShareError.name === "AbortError") {
+        if (
+          urlShareError &&
+          typeof urlShareError === "object" &&
+          "name" in urlShareError &&
+          urlShareError.name === "AbortError"
+        ) {
           return;
         }
       }
