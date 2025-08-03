@@ -53,8 +53,6 @@ export const getRecordsFromFirebase = async (): Promise<TableRecord[]> => {
         key: doc.id,
         requestNumber: data.requestNumber,
         siteLink: data.siteLink,
-        neighborhoodName: data.neighborhoodName,
-        streetName: data.streetName,
         images: data.images || [],
         createdDate: data.createdDate,
         pdfUrl: data.pdfUrl,

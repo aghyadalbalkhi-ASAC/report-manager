@@ -10,8 +10,6 @@ export const createTableRecord = async (
   const record = {
     requestNumber: values.requestNumber,
     siteLink: values.siteLink,
-    neighborhoodName: values.neighborhoodName,
-    streetName: values.streetName,
     createdDate: new Date().toLocaleString("ar-SA", {
       year: "numeric",
       month: "2-digit",

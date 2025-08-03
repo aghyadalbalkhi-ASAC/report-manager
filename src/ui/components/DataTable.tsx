@@ -24,17 +24,6 @@ const TABLE_COLUMNS = [
     dataIndex: "createdDate",
     key: "createdDate",
   },
-
-  {
-    title: "اسم الحي",
-    dataIndex: "neighborhoodName",
-    key: "neighborhoodName",
-  },
-  {
-    title: "اسم الشارع",
-    dataIndex: "streetName",
-    key: "streetName",
-  },
   {
     title: "رابط الموقع",
     dataIndex: "siteLink",
@@ -77,8 +66,6 @@ const TABLE_COLUMNS = [
 export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
   const [filters, setFilters] = useState({
     requestNumber: "",
-    neighborhoodName: "",
-    streetName: "",
   });
 
   const [pagination, setPagination] = useState<TablePaginationConfig>({
@@ -95,14 +82,8 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
       const matchesRequestNumber = record.requestNumber
         .toLowerCase()
         .includes(filters.requestNumber.toLowerCase());
-      const matchesNeighborhood = record.neighborhoodName
-        .toLowerCase()
-        .includes(filters.neighborhoodName.toLowerCase());
-      const matchesStreet = record.streetName
-        .toLowerCase()
-        .includes(filters.streetName.toLowerCase());
 
-      return matchesRequestNumber && matchesNeighborhood && matchesStreet;
+      return matchesRequestNumber;
     });
   }, [data, filters]);
 
@@ -152,20 +133,6 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
           placeholder="البحث في رقم الطلب"
           value={filters.requestNumber}
           onChange={(e) => handleFilterChange("requestNumber", e.target.value)}
-          allowClear
-        />
-        <Search
-          placeholder="البحث في اسم الحي"
-          value={filters.neighborhoodName}
-          onChange={(e) =>
-            handleFilterChange("neighborhoodName", e.target.value)
-          }
-          allowClear
-        />
-        <Search
-          placeholder="البحث في اسم الشارع"
-          value={filters.streetName}
-          onChange={(e) => handleFilterChange("streetName", e.target.value)}
           allowClear
         />
       </div>

@@ -18,9 +18,7 @@ export const exportToExcel = (data: TableRecord[]) => {
         "رقم الطلب": record.requestNumber,
         "تاريخ الإنشاء": record.createdDate,
         "رابط الموقع": record.siteLink,
-        "اسم الحي": record.neighborhoodName,
-        "اسم الشارع": record.streetName,
-        "عدد الصور": record.images?.length || 0,
+        "ملف PDF": record.pdfUrl || "غير متوفر",
       };
 
       // Add image columns
@@ -37,7 +35,7 @@ export const exportToExcel = (data: TableRecord[]) => {
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
     // Find image column indices (they come after the base columns)
-    const baseColumns = 6; // رقم الطلب, تاريخ الإنشاء, رابط الموقع, اسم الحي, اسم الشارع, عدد الصور
+    const baseColumns = 4; // رقم الطلب, تاريخ الإنشاء, رابط الموقع, ملف PDF
     const imageColumnStart = baseColumns;
 
     // Add hyperlinks for each image column
@@ -69,14 +67,32 @@ export const exportToExcel = (data: TableRecord[]) => {
       }
     }
 
+    // Add hyperlinks for PDF column (column D, index 3)
+    const pdfColLetter = XLSX.utils.encode_col(3); // Column D
+    for (let row = 1; row <= data.length; row++) {
+      const cellAddress = `${pdfColLetter}${row + 1}`; // +1 because row 1 is header
+      const record = data[row - 1];
+
+      if (record && record.pdfUrl) {
+        // Add hyperlink formatting for PDF
+        if (!worksheet[cellAddress]) {
+          worksheet[cellAddress] = { v: record.pdfUrl };
+        }
+
+        // Add hyperlink formatting
+        worksheet[cellAddress].l = {
+          Target: record.pdfUrl,
+          Tooltip: "انقر لفتح ملف PDF",
+        };
+      }
+    }
+
     // Set column widths
     const baseColumnWidths = [
       { wch: 15 }, // رقم الطلب
       { wch: 20 }, // تاريخ الإنشاء
       { wch: 40 }, // رابط الموقع
-      { wch: 20 }, // اسم الحي
-      { wch: 20 }, // اسم الشارع
-      { wch: 10 }, // عدد الصور
+      { wch: 50 }, // ملف PDF
     ];
 
     // Add image column widths
@@ -161,9 +177,7 @@ export const exportToExcelHTML = (data: TableRecord[]) => {
                 <th>رقم الطلب</th>
                 <th>تاريخ الإنشاء</th>
                 <th>رابط الموقع</th>
-                <th>اسم الحي</th>
-                <th>اسم الشارع</th>
-                <th>عدد الصور</th>
+                <th>ملف PDF</th>
                 ${Array.from({ length: maxImages }, (_, i) => `<th>صورة ${i + 1}</th>`).join("")}
               </tr>
             </thead>
@@ -172,12 +186,10 @@ export const exportToExcelHTML = (data: TableRecord[]) => {
                 .map(
                   (record) => `
                 <tr>
-                  <td>${record.requestNumber}</td>
-                  <td>${record.createdDate}</td>
-                  <td><a href="${record.siteLink}" target="_blank">${record.siteLink}</a></td>
-                  <td>${record.neighborhoodName}</td>
-                  <td>${record.streetName}</td>
-                  <td>${record.images?.length || 0}</td>
+                                 <td>${record.requestNumber}</td>
+               <td>${record.createdDate}</td>
+               <td><a href="${record.siteLink}" target="_blank">${record.siteLink}</a></td>
+               <td>${record.pdfUrl ? `<a href="${record.pdfUrl}" target="_blank">فتح PDF</a>` : "غير متوفر"}</td>
                                     ${Array.from(
                                       { length: maxImages },
                                       (_, i) =>

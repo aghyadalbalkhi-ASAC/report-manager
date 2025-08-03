@@ -8,8 +8,6 @@ const MAX_IMAGES = 10; // Increased from 5 to 10
 
 // Form validation rules
 const FORM_RULES = {
-  streetName: [{ required: true, message: "يرجى إدخال اسم الشارع" }],
-  neighborhoodName: [{ required: true, message: "يرجى إدخال اسم الحي" }],
   siteLink: [
     { required: true, message: "يرجى إدخال رابط الموقع" },
     { type: "url" as const, message: "يرجى إدخال رابط صحيح" },
@@ -111,21 +109,6 @@ export const DataForm = ({ form, onSave, loading = false }: DataFormProps) => {
                 rules={FORM_RULES.requestNumber}
               >
                 <Input placeholder="رقم الطلب / البلاغ" />
-              </Form.Item>
-
-              <Form.Item
-                name="neighborhoodName"
-                label="اسم الحي"
-                rules={FORM_RULES.neighborhoodName}
-              >
-                <Input placeholder="اسم الحي" />
-              </Form.Item>
-              <Form.Item
-                name="streetName"
-                label="اسم الشارع"
-                rules={FORM_RULES.streetName}
-              >
-                <Input placeholder="اسم الشارع" />
               </Form.Item>
 
               <Form.Item

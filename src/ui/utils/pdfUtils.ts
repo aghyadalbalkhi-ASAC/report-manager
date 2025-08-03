@@ -170,20 +170,12 @@ export const generateAndStorePDF = async (
     infoContainer.innerHTML = `
      <table style="width: 100%; border-collapse: collapse; direction: rtl;">
        <tr style="border-bottom: 1px solid #e5e7eb;">
-         <td style="padding: 8px; font-weight: bold; color: #374151; width: 120px; text-align: right;">رقم الطلب:</td>
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">رقم الطلب:</td>
          <td style="padding: 8px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
        </tr>
        <tr style="border-bottom: 1px solid #e5e7eb;">
          <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
          <td style="padding: 8px; color: #3b82f6; text-align: right; text-decoration: underline;">${record.siteLink}</td>
-       </tr>
-       <tr style="border-bottom: 1px solid #e5e7eb;">
-         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
-         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
-       </tr>
-       <tr style="border-bottom: 1px solid #e5e7eb;">
-         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
-         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.streetName}</td>
        </tr>
      </table>
    `;
@@ -204,7 +196,7 @@ export const generateAndStorePDF = async (
 
     // FIXED: Better link positioning for mobile compatibility
     // Calculate the position of the second row (site link row) in the table
-    const rowHeight = infoHeight / 4; // Assuming 4 rows in the table
+    const rowHeight = infoHeight / 2; // Now only 2 rows in the table
     const linkRowY = tableStartY + rowHeight; // Position of the second row
 
     // Position the link over the entire second row for better mobile tapping
@@ -417,20 +409,12 @@ export const exportToPDF = async (record: TableRecord) => {
     infoContainer.innerHTML = `
      <table style="width: 100%; border-collapse: collapse; direction: rtl;">
        <tr style="border-bottom: 1px solid #e5e7eb;">
-         <td style="padding: 8px; font-weight: bold; color: #374151; width: 120px; text-align: right;">رقم الطلب:</td>
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">رقم الطلب:</td>
          <td style="padding: 8px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
        </tr>
        <tr style="border-bottom: 1px solid #e5e7eb;">
          <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
          <td style="padding: 8px; color: #3b82f6; text-align: right; text-decoration: underline;">${record.siteLink}</td>
-       </tr>
-       <tr style="border-bottom: 1px solid #e5e7eb;">
-         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
-         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
-       </tr>
-       <tr style="border-bottom: 1px solid #e5e7eb;">
-         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
-         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.streetName}</td>
        </tr>
      </table>
    `;
@@ -451,7 +435,7 @@ export const exportToPDF = async (record: TableRecord) => {
 
     // FIXED: Better link positioning for mobile compatibility
     // Calculate the position of the second row (site link row) in the table
-    const rowHeight = infoHeight / 4; // Assuming 4 rows in the table
+    const rowHeight = infoHeight / 2; // Now only 2 rows in the table
     const linkRowY = tableStartY + rowHeight; // Position of the second row
 
     // Position the link over the entire second row for better mobile tapping
