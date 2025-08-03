@@ -5,11 +5,13 @@ import type { UploadFile } from "antd/es/upload/interface";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-export const generateAndStorePDF = async (
-  record: TableRecord,
-  fileList: UploadFile[]
-): Promise<string> => {
-  // Create a temporary container for the PDF content
+// Helper function to create Arabic text container
+const createArabicTextContainer = (
+  text: string,
+  fontSize: string = "16px",
+  fontWeight: string = "normal",
+  color: string = "#000000"
+) => {
   const container = document.createElement("div");
   container.style.position = "absolute";
   container.style.left = "-9999px";
@@ -17,10 +19,48 @@ export const generateAndStorePDF = async (
   container.style.width = "800px";
   container.style.backgroundColor = "white";
   container.style.padding = "20px";
-  container.style.fontFamily = "Arial, sans-serif";
+  container.style.fontFamily = "Noto Sans Arabic, Arial, sans-serif";
   container.style.direction = "rtl";
   container.style.textAlign = "right";
+  container.style.fontSize = fontSize;
+  container.style.fontWeight = fontWeight;
+  container.style.color = color;
+  container.style.lineHeight = "1.5";
+  container.innerHTML = text;
+  return container;
+};
 
+// Helper function to render Arabic text as image
+const renderArabicTextAsImage = async (
+  text: string,
+  fontSize: string = "16px",
+  fontWeight: string = "normal",
+  color: string = "#000000"
+) => {
+  const container = createArabicTextContainer(
+    text,
+    fontSize,
+    fontWeight,
+    color
+  );
+  document.body.appendChild(container);
+
+  const canvas = await html2canvas(container, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: "#ffffff",
+    logging: false,
+  });
+
+  document.body.removeChild(container);
+  return canvas;
+};
+
+export const generateAndStorePDF = async (
+  record: TableRecord,
+  fileList: UploadFile[]
+): Promise<string> => {
   // Convert images to base64 for embedding in PDF
   const imagePromises = fileList.map(async (file) => {
     if (!file.originFileObj) return null;
@@ -40,90 +80,37 @@ export const generateAndStorePDF = async (
 
   console.log("🔄 Converting images to base64:", validImages.length, "images");
 
-  // Create the PDF content
-  container.innerHTML = `
-    <div style="margin-bottom: 30px;">
-      <h1 style="color: #1f2937; margin-bottom: 10px; font-size: 24px;">تقرير البيانات</h1>
-      <p style="color: #6b7280; font-size: 14px;">تاريخ الإنشاء: ${record.createdDate}</p>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">معلومات الطلب</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; direction: rtl;">
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; width: 150px; text-align: right;">رقم الطلب:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">
-            <a href="${record.siteLink}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${record.siteLink}</a>
-          </td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.streetName}</td>
-        </tr>
-      </table>
-    </div>
-    
-    ${
-      validImages.length > 0
-        ? `
-        <div>
-          <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصور المرفقة</h2>
-          <div style="display: flex; flex-direction: column; gap: 20px;">
-            ${validImages
-              .map(
-                (image, index) => `
-              <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
-                <img src="${image}" alt="صورة ${index + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
-                <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
-                  صورة ${index + 1}
-                </div>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-        </div>
-      `
-        : '<p style="color: #6b7280; font-style: italic;">لا توجد صور مرفقة</p>'
-    }
-  `;
-
   try {
-    // Add container to DOM temporarily
-    document.body.appendChild(container);
-
-    console.log("🔄 Converting HTML to PDF using html2canvas...");
+    console.log("🔄 Generating PDF with enhanced Arabic support...");
 
     // Create PDF
     const pdf = new jsPDF("p", "mm", "a4");
     const pageWidth = 210; // A4 width in mm
-    const pageHeight = 295; // A4 height in mm
     const margin = 20; // margin in mm
     const contentWidth = pageWidth - 2 * margin;
 
     let currentY = margin;
 
-    // Create HTML content for the header and info
-    const headerContainer = document.createElement("div");
-    headerContainer.style.position = "absolute";
-    headerContainer.style.left = "-9999px";
-    headerContainer.style.top = "0";
-    headerContainer.style.width = "800px";
-    headerContainer.style.backgroundColor = "white";
-    headerContainer.style.padding = "20px";
-    headerContainer.style.fontFamily = "Arial, sans-serif";
-    headerContainer.style.direction = "rtl";
-    headerContainer.style.textAlign = "right";
+    // Render title as image for perfect Arabic support
+    const titleCanvas = await renderArabicTextAsImage(
+      "تقرير البيانات",
+      "24px",
+      "bold",
+      "#1f2937"
+    );
+    const titleWidth = contentWidth;
+    const titleHeight = (titleCanvas.height * titleWidth) / titleCanvas.width;
+    pdf.addImage(
+      titleCanvas,
+      "JPEG",
+      margin,
+      currentY,
+      titleWidth,
+      titleHeight
+    );
+    currentY += titleHeight + 10;
 
-    // Format date in English to avoid encoding issues
+    // Add creation date
     const dateObj = new Date();
     const formattedDate = dateObj.toLocaleDateString("en-US", {
       year: "numeric",
@@ -134,79 +121,121 @@ export const generateAndStorePDF = async (
       second: "2-digit",
     });
 
-    headerContainer.innerHTML = `
-    <div style="margin-bottom: 30px;">
-      <h1 style="color: #1f2937; margin-bottom: 10px; font-size: 24px;">تقرير البيانات</h1>
-      <p style="color: #6b7280; font-size: 14px;">تاريخ الإنشاء: ${formattedDate}</p>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">معلومات الطلب</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; direction: rtl;">
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; width: 150px; text-align: right;">رقم الطلب:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">
-            <a href="${record.siteLink}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${record.siteLink}</a>
-          </td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.streetName}</td>
-        </tr>
-      </table>
-    </div>
-  `;
+    const dateCanvas = await renderArabicTextAsImage(
+      `تاريخ الإنشاء: ${formattedDate}`,
+      "14px",
+      "normal",
+      "#6b7280"
+    );
+    const dateWidth = contentWidth;
+    const dateHeight = (dateCanvas.height * dateWidth) / dateCanvas.width;
+    pdf.addImage(dateCanvas, "JPEG", margin, currentY, dateWidth, dateHeight);
+    currentY += dateHeight + 15;
 
-    document.body.appendChild(headerContainer);
+    // Add section title
+    const sectionCanvas = await renderArabicTextAsImage(
+      "معلومات الطلب",
+      "18px",
+      "bold",
+      "#374151"
+    );
+    const sectionWidth = contentWidth;
+    const sectionHeight =
+      (sectionCanvas.height * sectionWidth) / sectionCanvas.width;
+    pdf.addImage(
+      sectionCanvas,
+      "JPEG",
+      margin,
+      currentY,
+      sectionWidth,
+      sectionHeight
+    );
+    currentY += sectionHeight + 10;
 
-    // Convert header to canvas
-    const headerCanvas = await html2canvas(headerContainer, {
+    // Store the Y position before adding the table for link positioning
+    const tableStartY = currentY;
+
+    // Create information table with Arabic text
+    const infoContainer = document.createElement("div");
+    infoContainer.style.position = "absolute";
+    infoContainer.style.left = "-9999px";
+    infoContainer.style.top = "0";
+    infoContainer.style.width = "800px";
+    infoContainer.style.backgroundColor = "white";
+    infoContainer.style.padding = "20px";
+    infoContainer.style.fontFamily = "Noto Sans Arabic, Arial, sans-serif";
+    infoContainer.style.direction = "rtl";
+    infoContainer.style.textAlign = "right";
+    infoContainer.style.fontSize = "12px";
+    infoContainer.innerHTML = `
+     <table style="width: 100%; border-collapse: collapse; direction: rtl;">
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; width: 120px; text-align: right;">رقم الطلب:</td>
+         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
+       </tr>
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
+         <td style="padding: 8px; color: #3b82f6; text-align: right; text-decoration: underline;">${record.siteLink}</td>
+       </tr>
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
+         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
+       </tr>
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
+         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.streetName}</td>
+       </tr>
+     </table>
+   `;
+
+    document.body.appendChild(infoContainer);
+    const infoCanvas = await html2canvas(infoContainer, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
     });
+    document.body.removeChild(infoContainer);
 
-    // Calculate header dimensions
-    const headerImgWidth = contentWidth;
-    const headerImgHeight =
-      (headerCanvas.height * headerImgWidth) / headerCanvas.width;
+    const infoWidth = contentWidth;
+    const infoHeight = (infoCanvas.height * infoWidth) / infoCanvas.width;
+    pdf.addImage(infoCanvas, "JPEG", margin, currentY, infoWidth, infoHeight);
+    currentY += infoHeight + 20;
 
-    // Add header to PDF
-    pdf.addImage(
-      headerCanvas,
-      "JPEG",
-      margin,
-      currentY,
-      headerImgWidth,
-      headerImgHeight
-    );
-    currentY += headerImgHeight + 20;
+    // FIXED: Better link positioning for mobile compatibility
+    // Calculate the position of the second row (site link row) in the table
+    const rowHeight = infoHeight / 4; // Assuming 4 rows in the table
+    const linkRowY = tableStartY + rowHeight; // Position of the second row
 
-    // Remove header container
-    document.body.removeChild(headerContainer);
+    // Position the link over the entire second row for better mobile tapping
+    const linkX = margin; // Start from the left margin
+    const linkWidth = contentWidth; // Cover the entire row width
+    const linkHeight = rowHeight; // Cover the entire row height
+
+    // Add link annotation with better positioning
+    pdf.link(linkX, linkRowY, linkWidth, linkHeight, { url: record.siteLink });
 
     // Add images section
     if (validImages.length > 0) {
-      // Create images section container
-      const imagesContainer = document.createElement("div");
-      imagesContainer.style.position = "absolute";
-      imagesContainer.style.left = "-9999px";
-      imagesContainer.style.top = "0";
-      imagesContainer.style.width = "800px";
-      imagesContainer.style.backgroundColor = "white";
-      imagesContainer.style.padding = "20px";
-      imagesContainer.style.fontFamily = "Arial, sans-serif";
-      imagesContainer.style.direction = "rtl";
-      imagesContainer.style.textAlign = "right";
+      // Add section title for images
+      const imagesTitleCanvas = await renderArabicTextAsImage(
+        "الصور المرفقة",
+        "18px",
+        "bold",
+        "#374151"
+      );
+      const imagesTitleWidth = contentWidth;
+      const imagesTitleHeight =
+        (imagesTitleCanvas.height * imagesTitleWidth) / imagesTitleCanvas.width;
+      pdf.addImage(
+        imagesTitleCanvas,
+        "JPEG",
+        margin,
+        currentY,
+        imagesTitleWidth,
+        imagesTitleHeight
+      );
+      currentY += imagesTitleHeight + 20;
 
       // Process each image individually on separate pages
       for (let i = 0; i < validImages.length; i++) {
@@ -216,22 +245,31 @@ export const generateAndStorePDF = async (
         pdf.addPage();
         currentY = margin;
 
-        imagesContainer.innerHTML = `
-          <div>
-            <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصورة ${i + 1}</h2>
-            <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
-              <img src="${image}" alt="صورة ${i + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
-              <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
-                صورة ${i + 1}
-              </div>
+        // Create temporary container for image processing
+        const imgContainer = document.createElement("div");
+        imgContainer.style.position = "absolute";
+        imgContainer.style.left = "-9999px";
+        imgContainer.style.top = "0";
+        imgContainer.style.width = "800px";
+        imgContainer.style.backgroundColor = "white";
+        imgContainer.style.padding = "20px";
+        imgContainer.style.fontFamily = "Noto Sans Arabic, Arial, sans-serif";
+        imgContainer.style.direction = "rtl";
+        imgContainer.style.textAlign = "right";
+
+        imgContainer.innerHTML = `
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
+            <img src="${image}" alt="صورة ${i + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
+            <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280; font-family: 'Noto Sans Arabic', Arial, sans-serif;">
+              صورة ${i + 1}
             </div>
           </div>
         `;
 
-        document.body.appendChild(imagesContainer);
+        document.body.appendChild(imgContainer);
 
-        // Convert image section to canvas
-        const imageCanvas = await html2canvas(imagesContainer, {
+        // Convert image to canvas
+        const imageCanvas = await html2canvas(imgContainer, {
           scale: 2,
           useCORS: true,
           allowTaint: true,
@@ -254,63 +292,32 @@ export const generateAndStorePDF = async (
         );
 
         // Remove image container
-        document.body.removeChild(imagesContainer);
+        document.body.removeChild(imgContainer);
       }
     } else {
-      // Check if we need a new page for "no images" message
-      if (currentY > pageHeight - margin - 20) {
-        pdf.addPage();
-        currentY = margin;
-      }
-
-      // Create no images message container
-      const noImagesContainer = document.createElement("div");
-      noImagesContainer.style.position = "absolute";
-      noImagesContainer.style.left = "-9999px";
-      noImagesContainer.style.top = "0";
-      noImagesContainer.style.width = "800px";
-      noImagesContainer.style.backgroundColor = "white";
-      noImagesContainer.style.padding = "20px";
-      noImagesContainer.style.fontFamily = "Arial, sans-serif";
-      noImagesContainer.style.direction = "rtl";
-      noImagesContainer.style.textAlign = "right";
-
-      noImagesContainer.innerHTML = `
-        <p style="color: #6b7280; font-style: italic;">لا توجد صور مرفقة</p>
-      `;
-
-      document.body.appendChild(noImagesContainer);
-
-      // Convert no images message to canvas
-      const noImagesCanvas = await html2canvas(noImagesContainer, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-      });
-
-      // Calculate no images message dimensions
-      const noImagesImgWidth = contentWidth;
-      const noImagesImgHeight =
-        (noImagesCanvas.height * noImagesImgWidth) / noImagesCanvas.width;
-
-      // Add no images message to PDF
+      // Add "no images" message
+      const noImagesCanvas = await renderArabicTextAsImage(
+        "لا توجد صور مرفقة",
+        "12px",
+        "italic",
+        "#6b7280"
+      );
+      const noImagesWidth = contentWidth;
+      const noImagesHeight =
+        (noImagesCanvas.height * noImagesWidth) / noImagesCanvas.width;
       pdf.addImage(
         noImagesCanvas,
         "JPEG",
         margin,
         currentY,
-        noImagesImgWidth,
-        noImagesImgHeight
+        noImagesWidth,
+        noImagesHeight
       );
-
-      // Remove no images container
-      document.body.removeChild(noImagesContainer);
     }
 
     // Convert PDF to blob
     const pdfBlob = pdf.output("blob");
-    console.log("✅ PDF generated successfully");
+    console.log("✅ PDF generated successfully with enhanced Arabic support");
 
     // Upload to Firebase Storage
     const timestamp = Date.now();
@@ -324,129 +331,263 @@ export const generateAndStorePDF = async (
     const pdfUrl = await getDownloadURL(storageRef);
     console.log("✅ PDF URL generated:", pdfUrl);
 
-    // Remove container from DOM
-    document.body.removeChild(container);
-
     return pdfUrl;
   } catch (error: unknown) {
     console.error("❌ Error generating and storing PDF:", error);
-    // Remove container from DOM if it exists
-    if (document.body.contains(container)) {
-      document.body.removeChild(container);
-    }
     throw new Error("فشل في إنشاء وحفظ ملف PDF");
   }
 };
 
 export const exportToPDF = async (record: TableRecord) => {
-  // Create a temporary container for the PDF content
-  const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "-9999px";
-  container.style.top = "0";
-  container.style.width = "800px";
-  container.style.backgroundColor = "white";
-  container.style.padding = "20px";
-  container.style.fontFamily = "Arial, sans-serif";
-  container.style.direction = "rtl";
-  container.style.textAlign = "right";
-
-  // Create the PDF content
-  container.innerHTML = `
-    <div style="margin-bottom: 30px;">
-      <h1 style="color: #1f2937; margin-bottom: 10px; font-size: 24px;">تقرير البيانات</h1>
-      <p style="color: #6b7280; font-size: 14px;">تاريخ الإنشاء: ${record.createdDate}</p>
-    </div>
-    
-    <div style="margin-bottom: 30px;">
-      <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">معلومات الطلب</h2>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; direction: rtl;">
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; width: 150px; text-align: right;">رقم الطلب:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">
-            <a href="${record.siteLink}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${record.siteLink}</a>
-          </td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
-          <td style="padding: 12px; color: #1f2937; text-align: right;">${record.streetName}</td>
-        </tr>
-      </table>
-    </div>
-    
-    ${
-      (record.images?.length || 0) > 0
-        ? `
-        <div>
-          <h2 style="color: #374151; margin-bottom: 15px; font-size: 18px;">الصور المرفقة</h2>
-          <div style="display: flex; flex-direction: column; gap: 20px;">
-            ${record
-              .images!.map(
-                (image, index) => `
-              <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
-                <img src="${image}" alt="صورة ${index + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
-                <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280;">
-                  صورة ${index + 1}
-                </div>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-        </div>
-      `
-        : '<p style="color: #6b7280; font-style: italic;">لا توجد صور مرفقة</p>'
-    }
-  `;
-
-  // Add container to DOM
-  document.body.appendChild(container);
-
   try {
-    // Use browser's print functionality
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html dir="rtl">
-          <head>
-            <title>تقرير ${record.requestNumber}</title>
-            <style>
-              body { 
-                margin: 0; 
-                direction: rtl; 
-                text-align: right; 
-                font-family: Arial, sans-serif;
-              }
-              .no-print { display: none; }
-              table { direction: rtl; }
-              td { text-align: right; }
-              a { color: #3b82f6; text-decoration: underline; }
-            </style>
-          </head>
-          <body>
-            ${container.innerHTML}
-            <div class="no-print" style="text-align: center; margin-top: 20px;">
-              <button onclick="window.print()">طباعة / حفظ كـ PDF</button>
+    // Create PDF with enhanced Arabic support
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = 210; // A4 width in mm
+    const margin = 20; // margin in mm
+    const contentWidth = pageWidth - 2 * margin;
+
+    let currentY = margin;
+
+    // Render title as image for perfect Arabic support
+    const titleCanvas = await renderArabicTextAsImage(
+      "تقرير البيانات",
+      "24px",
+      "bold",
+      "#1f2937"
+    );
+    const titleWidth = contentWidth;
+    const titleHeight = (titleCanvas.height * titleWidth) / titleCanvas.width;
+    pdf.addImage(
+      titleCanvas,
+      "JPEG",
+      margin,
+      currentY,
+      titleWidth,
+      titleHeight
+    );
+    currentY += titleHeight + 10;
+
+    // Add creation date
+    const dateCanvas = await renderArabicTextAsImage(
+      `تاريخ الإنشاء: ${record.createdDate}`,
+      "14px",
+      "normal",
+      "#6b7280"
+    );
+    const dateWidth = contentWidth;
+    const dateHeight = (dateCanvas.height * dateWidth) / dateCanvas.width;
+    pdf.addImage(dateCanvas, "JPEG", margin, currentY, dateWidth, dateHeight);
+    currentY += dateHeight + 15;
+
+    // Add section title
+    const sectionCanvas = await renderArabicTextAsImage(
+      "معلومات الطلب",
+      "18px",
+      "bold",
+      "#374151"
+    );
+    const sectionWidth = contentWidth;
+    const sectionHeight =
+      (sectionCanvas.height * sectionWidth) / sectionCanvas.width;
+    pdf.addImage(
+      sectionCanvas,
+      "JPEG",
+      margin,
+      currentY,
+      sectionWidth,
+      sectionHeight
+    );
+    currentY += sectionHeight + 10;
+
+    // Store the Y position before adding the table for link positioning
+    const tableStartY = currentY;
+
+    // Create information table with Arabic text
+    const infoContainer = document.createElement("div");
+    infoContainer.style.position = "absolute";
+    infoContainer.style.left = "-9999px";
+    infoContainer.style.top = "0";
+    infoContainer.style.width = "800px";
+    infoContainer.style.backgroundColor = "white";
+    infoContainer.style.padding = "20px";
+    infoContainer.style.fontFamily = "Noto Sans Arabic, Arial, sans-serif";
+    infoContainer.style.direction = "rtl";
+    infoContainer.style.textAlign = "right";
+    infoContainer.style.fontSize = "12px";
+    infoContainer.innerHTML = `
+     <table style="width: 100%; border-collapse: collapse; direction: rtl;">
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; width: 120px; text-align: right;">رقم الطلب:</td>
+         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.requestNumber}</td>
+       </tr>
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">رابط الموقع:</td>
+         <td style="padding: 8px; color: #3b82f6; text-align: right; text-decoration: underline;">${record.siteLink}</td>
+       </tr>
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الحي:</td>
+         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.neighborhoodName}</td>
+       </tr>
+       <tr style="border-bottom: 1px solid #e5e7eb;">
+         <td style="padding: 8px; font-weight: bold; color: #374151; text-align: right;">اسم الشارع:</td>
+         <td style="padding: 8px; color: #1f2937; text-align: right;">${record.streetName}</td>
+       </tr>
+     </table>
+   `;
+
+    document.body.appendChild(infoContainer);
+    const infoCanvas = await html2canvas(infoContainer, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+    });
+    document.body.removeChild(infoContainer);
+
+    const infoWidth = contentWidth;
+    const infoHeight = (infoCanvas.height * infoWidth) / infoCanvas.width;
+    pdf.addImage(infoCanvas, "JPEG", margin, currentY, infoWidth, infoHeight);
+    currentY += infoHeight + 20;
+
+    // FIXED: Better link positioning for mobile compatibility
+    // Calculate the position of the second row (site link row) in the table
+    const rowHeight = infoHeight / 4; // Assuming 4 rows in the table
+    const linkRowY = tableStartY + rowHeight; // Position of the second row
+
+    // Position the link over the entire second row for better mobile tapping
+    const linkX = margin; // Start from the left margin
+    const linkWidth = contentWidth; // Cover the entire row width
+    const linkHeight = rowHeight; // Cover the entire row height
+
+    // Add link annotation with better positioning
+    pdf.link(linkX, linkRowY, linkWidth, linkHeight, { url: record.siteLink });
+
+    // Add images section
+    if ((record.images?.length || 0) > 0) {
+      // Add section title for images
+      const imagesTitleCanvas = await renderArabicTextAsImage(
+        "الصور المرفقة",
+        "18px",
+        "bold",
+        "#374151"
+      );
+      const imagesTitleWidth = contentWidth;
+      const imagesTitleHeight =
+        (imagesTitleCanvas.height * imagesTitleWidth) / imagesTitleCanvas.width;
+      pdf.addImage(
+        imagesTitleCanvas,
+        "JPEG",
+        margin,
+        currentY,
+        imagesTitleWidth,
+        imagesTitleHeight
+      );
+      currentY += imagesTitleHeight + 20;
+
+      // Process each image
+      for (let i = 0; i < record.images!.length; i++) {
+        const image = record.images![i];
+
+        // Add a new page for each image
+        pdf.addPage();
+        currentY = margin;
+
+        // Add image title
+        const imgTitleCanvas = await renderArabicTextAsImage(
+          `الصورة ${i + 1}`,
+          "18px",
+          "bold",
+          "#374151"
+        );
+        const imgTitleWidth = contentWidth;
+        const imgTitleHeight =
+          (imgTitleCanvas.height * imgTitleWidth) / imgTitleCanvas.width;
+        pdf.addImage(
+          imgTitleCanvas,
+          "JPEG",
+          margin,
+          currentY,
+          imgTitleWidth,
+          imgTitleHeight
+        );
+        currentY += imgTitleHeight + 20;
+
+        // Create temporary container for image processing
+        const imgContainer = document.createElement("div");
+        imgContainer.style.position = "absolute";
+        imgContainer.style.left = "-9999px";
+        imgContainer.style.top = "0";
+        imgContainer.style.width = "800px";
+        imgContainer.style.backgroundColor = "white";
+        imgContainer.style.padding = "20px";
+        imgContainer.style.fontFamily = "Noto Sans Arabic, Arial, sans-serif";
+        imgContainer.style.direction = "rtl";
+        imgContainer.style.textAlign = "right";
+
+        imgContainer.innerHTML = `
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 100%;">
+            <img src="${image}" alt="صورة ${i + 1}" style="width: auto; height: auto; max-width: 100%; display: block;" />
+            <div style="padding: 8px; background-color: #f9fafb; text-align: center; font-size: 12px; color: #6b7280; font-family: 'Noto Sans Arabic', Arial, sans-serif;">
+              صورة ${i + 1}
             </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+          </div>
+        `;
+
+        document.body.appendChild(imgContainer);
+
+        // Convert image to canvas
+        const imageCanvas = await html2canvas(imgContainer, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: "#ffffff",
+        });
+
+        // Calculate image dimensions to fit on the page
+        const imageImgWidth = contentWidth;
+        const imageImgHeight =
+          (imageCanvas.height * imageImgWidth) / imageCanvas.width;
+
+        // Add image to PDF
+        pdf.addImage(
+          imageCanvas,
+          "JPEG",
+          margin,
+          currentY,
+          imageImgWidth,
+          imageImgHeight
+        );
+
+        // Remove image container
+        document.body.removeChild(imgContainer);
+      }
+    } else {
+      // Add "no images" message
+      const noImagesCanvas = await renderArabicTextAsImage(
+        "لا توجد صور مرفقة",
+        "12px",
+        "italic",
+        "#6b7280"
+      );
+      const noImagesWidth = contentWidth;
+      const noImagesHeight =
+        (noImagesCanvas.height * noImagesWidth) / noImagesCanvas.width;
+      pdf.addImage(
+        noImagesCanvas,
+        "JPEG",
+        margin,
+        currentY,
+        noImagesWidth,
+        noImagesHeight
+      );
     }
 
-    // Remove container from DOM
-    document.body.removeChild(container);
+    // Save the PDF
+    pdf.save(`تقرير_${record.requestNumber}.pdf`);
+
+    console.log("✅ PDF exported successfully with enhanced Arabic support");
   } catch (error) {
     console.error("Error generating PDF:", error);
-    document.body.removeChild(container);
     throw new Error("فشل في إنشاء ملف PDF");
   }
 };
