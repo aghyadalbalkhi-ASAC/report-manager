@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Table, Input, Button, Typography } from "antd";
+import { Table, Input, Button, Typography, message } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
 import { ShareAltOutlined } from "@ant-design/icons";
 import { TableRecord } from "src/types/form-data.type";
@@ -14,58 +14,140 @@ interface DataTableProps {
   onPreview?: (images: string[]) => void;
 }
 
-// Share PDF function
+// Enhanced Share PDF function with better mobile support
 const handleSharePDF = async (record: TableRecord) => {
   if (!record.pdfUrl) {
-    console.error("No PDF URL available");
+    message.error("لا يوجد رابط PDF متاح");
     return;
   }
 
   try {
-    // Check if Web Share API is available (mobile browsers)
-    if (navigator.share) {
-      try {
-        // Try to download the file first and then share it
-        const response = await fetch(record.pdfUrl);
-        const blob = await response.blob();
-        const file = new File([blob], `تقرير_${record.requestNumber}.pdf`, {
-          type: "application/pdf",
-        });
+    message.loading("جاري تحضير الملف للمشاركة...", 0);
 
-        // Share the file directly (works on mobile)
-        await navigator.share({
-          title: `تقرير ${record.requestNumber}`,
-          text: `تقرير البيانات - رقم الطلب: ${record.requestNumber}`,
-          files: [file],
-        });
-      } catch (fileShareError) {
-        // If file sharing fails, fall back to URL sharing
-        console.log(
-          "File sharing failed, falling back to URL sharing:",
-          fileShareError
-        );
+    // Download the file first to get the actual content
+    console.log("🔄 Downloading PDF file for sharing...");
+    const response = await fetch(record.pdfUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/pdf",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download PDF: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const fileName = `تقرير_${record.requestNumber}.pdf`;
+
+    // Ensure the blob has the correct MIME type
+    const pdfBlob = new Blob([blob], { type: "application/pdf" });
+    const file = new File([pdfBlob], fileName, {
+      type: "application/pdf",
+      lastModified: Date.now(),
+    });
+
+    console.log(
+      "✅ PDF file prepared:",
+      fileName,
+      "Size:",
+      pdfBlob.size,
+      "bytes"
+    );
+    message.destroy(); // Remove loading message
+
+    // Check if Web Share API is available and supports files
+    if (navigator.share) {
+      // First check if we can share files
+      const canShareFiles =
+        navigator.canShare && navigator.canShare({ files: [file] });
+
+      if (canShareFiles) {
+        try {
+          console.log("📱 Sharing file via native Web Share API...");
+          await navigator.share({
+            title: `تقرير ${record.requestNumber}`,
+            text: `تقرير البيانات - رقم الطلب: ${record.requestNumber}`,
+            files: [file],
+          });
+          console.log("✅ File shared successfully");
+          message.success("تم مشاركة الملف بنجاح");
+          return;
+        } catch (shareError: unknown) {
+          console.log("❌ File sharing failed:", shareError);
+          // If user cancelled, don't show error
+          if (
+            shareError &&
+            typeof shareError === "object" &&
+            "name" in shareError &&
+            shareError.name === "AbortError"
+          ) {
+            return;
+          }
+        }
+      }
+
+      // Fallback to URL sharing if file sharing not supported
+      try {
+        console.log("🔗 Falling back to URL sharing...");
         await navigator.share({
           title: `تقرير ${record.requestNumber}`,
           text: `تقرير البيانات - رقم الطلب: ${record.requestNumber}`,
           url: record.pdfUrl,
         });
+        console.log("✅ URL shared successfully");
+        message.success("تم مشاركة الرابط بنجاح");
+        return;
+      } catch (urlShareError: unknown) {
+        console.log("❌ URL sharing failed:", urlShareError);
+        if (urlShareError.name === "AbortError") {
+          return;
+        }
       }
-    } else {
-      // Fallback for desktop or browsers without Web Share API
-      // Create a temporary download link
-      const link = document.createElement("a");
-      link.href = record.pdfUrl;
-      link.download = `تقرير_${record.requestNumber}.pdf`;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     }
+
+    // Final fallback: download the file
+    console.log("💻 Using download fallback...");
+    downloadFile(pdfBlob, fileName);
+    message.success("تم تحميل الملف بنجاح");
   } catch (error) {
-    console.error("Error sharing PDF:", error);
-    // Fallback: open in new tab
-    window.open(record.pdfUrl, "_blank");
+    console.error("❌ Error in share process:", error);
+    message.destroy();
+    message.error("حدث خطأ أثناء مشاركة الملف");
+
+    // Last resort: open in new tab
+    try {
+      window.open(record.pdfUrl, "_blank");
+    } catch (openError) {
+      console.error("❌ Failed to open PDF:", openError);
+    }
   }
+};
+
+// Helper function to download file
+const downloadFile = (blob: Blob, fileName: string) => {
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = fileName;
+  link.style.display = "none";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // Clean up the blob URL after a short delay
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+};
+
+// Check if device is mobile
+const isMobileDevice = () => {
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    ) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2)
+  );
 };
 
 const TABLE_COLUMNS = [
@@ -122,6 +204,7 @@ const TABLE_COLUMNS = [
     key: "share",
     render: (_: unknown, record: TableRecord) => {
       if (record.pdfUrl) {
+        const isMobile = isMobileDevice();
         return (
           <Button
             type="default"
@@ -129,8 +212,9 @@ const TABLE_COLUMNS = [
             icon={<ShareAltOutlined />}
             onClick={() => handleSharePDF(record)}
             className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            title={isMobile ? "مشاركة الملف" : "تحميل الملف"}
           >
-            مشاركة
+            {isMobile ? "مشاركة" : "تحميل"}
           </Button>
         );
       } else {
@@ -185,7 +269,7 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
         </span>
       ),
     },
-    ...TABLE_COLUMNS, // Include all columns from TABLE_COLUMNS
+    ...TABLE_COLUMNS,
     {
       title: "الإجراءات",
       key: "actions",
