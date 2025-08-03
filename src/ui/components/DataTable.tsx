@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Table, Input, Button, Typography } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
+import { ShareAltOutlined } from "@ant-design/icons";
 import { TableRecord } from "src/types/form-data.type";
 import { ActionButtons } from "./ActionButtons";
 
@@ -12,6 +13,60 @@ interface DataTableProps {
   onDelete: (key: string) => Promise<void>;
   onPreview?: (images: string[]) => void;
 }
+
+// Share PDF function
+const handleSharePDF = async (record: TableRecord) => {
+  if (!record.pdfUrl) {
+    console.error("No PDF URL available");
+    return;
+  }
+
+  try {
+    // Check if Web Share API is available (mobile browsers)
+    if (navigator.share) {
+      try {
+        // Try to download the file first and then share it
+        const response = await fetch(record.pdfUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `تقرير_${record.requestNumber}.pdf`, {
+          type: "application/pdf",
+        });
+
+        // Share the file directly (works on mobile)
+        await navigator.share({
+          title: `تقرير ${record.requestNumber}`,
+          text: `تقرير البيانات - رقم الطلب: ${record.requestNumber}`,
+          files: [file],
+        });
+      } catch (fileShareError) {
+        // If file sharing fails, fall back to URL sharing
+        console.log(
+          "File sharing failed, falling back to URL sharing:",
+          fileShareError
+        );
+        await navigator.share({
+          title: `تقرير ${record.requestNumber}`,
+          text: `تقرير البيانات - رقم الطلب: ${record.requestNumber}`,
+          url: record.pdfUrl,
+        });
+      }
+    } else {
+      // Fallback for desktop or browsers without Web Share API
+      // Create a temporary download link
+      const link = document.createElement("a");
+      link.href = record.pdfUrl;
+      link.download = `تقرير_${record.requestNumber}.pdf`;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  } catch (error) {
+    console.error("Error sharing PDF:", error);
+    // Fallback: open in new tab
+    window.open(record.pdfUrl, "_blank");
+  }
+};
 
 const TABLE_COLUMNS = [
   {
@@ -54,6 +109,28 @@ const TABLE_COLUMNS = [
             }}
           >
             عرض PDF
+          </Button>
+        );
+      } else {
+        return <span className="text-gray-400 text-sm">غير متوفر</span>;
+      }
+    },
+  },
+  {
+    title: "مشاركة",
+    dataIndex: "share",
+    key: "share",
+    render: (_: unknown, record: TableRecord) => {
+      if (record.pdfUrl) {
+        return (
+          <Button
+            type="default"
+            size="small"
+            icon={<ShareAltOutlined />}
+            onClick={() => handleSharePDF(record)}
+            className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+          >
+            مشاركة
           </Button>
         );
       } else {
