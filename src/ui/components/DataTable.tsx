@@ -344,24 +344,31 @@ const TABLE_COLUMNS = [
     title: "رقم الطلب",
     dataIndex: "requestNumber",
     key: "requestNumber",
+    width: 120,
+    fixed: "left" as const,
+    ellipsis: true,
   },
   {
     title: "تاريخ الإنشاء",
     dataIndex: "createdDate",
     key: "createdDate",
+    width: 140,
+    ellipsis: true,
   },
   {
     title: "رابط الموقع",
     dataIndex: "siteLink",
     key: "siteLink",
+    width: 200,
+    ellipsis: true,
     render: (text: string) => (
       <a
         href={text}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 hover:text-blue-800 underline"
+        className="text-blue-600 hover:text-blue-800 underline text-xs"
       >
-        {text}
+        {text.length > 30 ? `${text.substring(0, 30)}...` : text}
       </a>
     ),
   },
@@ -369,6 +376,8 @@ const TABLE_COLUMNS = [
     title: "ملف PDF",
     dataIndex: "pdfUrl",
     key: "pdfUrl",
+    width: 100,
+    ellipsis: true,
     render: (_: unknown, record: TableRecord) => {
       if (record.pdfUrl) {
         return (
@@ -378,12 +387,13 @@ const TABLE_COLUMNS = [
             onClick={() => {
               window.open(record.pdfUrl, "_blank");
             }}
+            className="text-xs px-2"
           >
             عرض PDF
           </Button>
         );
       } else {
-        return <span className="text-gray-400 text-sm">غير متوفر</span>;
+        return <span className="text-gray-400 text-xs">غير متوفر</span>;
       }
     },
   },
@@ -391,6 +401,8 @@ const TABLE_COLUMNS = [
     title: "مشاركة",
     dataIndex: "share",
     key: "share",
+    width: 100,
+    ellipsis: true,
     render: (_: unknown, record: TableRecord) => {
       if (record.pdfUrl) {
         const isMobile = isMobileDevice();
@@ -405,14 +417,14 @@ const TABLE_COLUMNS = [
                 handleAlternativeShare(record)
               );
             }}
-            className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-xs px-2"
             title={isMobile ? "مشاركة الملف" : "تحميل الملف"}
           >
             {isMobile ? "مشاركة" : "تحميل"}
           </Button>
         );
       } else {
-        return <span className="text-gray-400 text-sm">غير متوفر</span>;
+        return <span className="text-gray-400 text-xs">غير متوفر</span>;
       }
     },
   },
@@ -430,6 +442,9 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
     showSizeChanger: true,
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} من ${total} سجل`,
+    size: "small",
+    responsive: true,
+    showLessItems: true,
   });
 
   const filteredData = useMemo(() => {
@@ -457,6 +472,7 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
       dataIndex: "count",
       key: "count",
       width: 60,
+      fixed: "left" as const,
       render: (_: unknown, __: TableRecord, index: number) => (
         <span className="text-sm text-gray-500 font-medium">
           {getStartingNumber(index)}
@@ -467,6 +483,9 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
     {
       title: "الإجراءات",
       key: "actions",
+      width: 100,
+      fixed: "right" as const,
+      ellipsis: true,
       render: (_: unknown, record: TableRecord) => (
         <ActionButtons record={record} onDelete={onDelete} />
       ),
@@ -474,33 +493,39 @@ export const DataTable: React.FC<DataTableProps> = ({ data, onDelete }) => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full overflow-hidden">
       {/* Record count info */}
-      <div className="flex justify-between items-center">
-        <Text className="text-gray-600">
+      <div className="flex justify-between items-center px-2">
+        <Text className="text-gray-600 text-sm">
           إجمالي السجلات: {filteredData.length}
         </Text>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 px-2">
         <Search
           placeholder="البحث في رقم الطلب"
           value={filters.requestNumber}
           onChange={(e) => handleFilterChange("requestNumber", e.target.value)}
           allowClear
+          size="small"
         />
       </div>
 
-      {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={filteredData}
-        pagination={pagination}
-        onChange={(paginationConfig) => setPagination(paginationConfig)}
-        rowKey="key"
-        className="bg-white rounded-lg shadow"
-      />
+      {/* Table Container */}
+      <div className="overflow-x-auto">
+        <Table
+          columns={columns}
+          dataSource={filteredData}
+          pagination={pagination}
+          onChange={(paginationConfig) => setPagination(paginationConfig)}
+          rowKey="key"
+          className="bg-white rounded-lg shadow min-w-full"
+          scroll={{ x: "max-content" }}
+          size="small"
+          tableLayout="auto"
+        />
+      </div>
     </div>
   );
 };

@@ -30,12 +30,13 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   return (
-    <Space>
+    <Space size="small">
       <Button
         danger
         icon={<DeleteOutlined />}
         onClick={handleDelete}
         size="small"
+        className="text-xs px-2"
       >
         حذف
       </Button>
