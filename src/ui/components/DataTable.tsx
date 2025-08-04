@@ -30,23 +30,52 @@ const handleSharePDF = async (record: TableRecord) => {
 
     message.loading("جاري تحضير الملف للمشاركة...", 0);
 
-    // Download the file first to get the actual content
-    console.log("🔄 Downloading PDF file for sharing...");
-    const response = await fetch(record.pdfUrl, {
-      method: "GET",
-      headers: {
-        Accept: "application/pdf",
-      },
-      mode: "cors", // Ensure CORS is handled
-    });
+    // Check if this is a Firebase Storage URL
+    const isFirebaseUrl =
+      record.pdfUrl.includes("firebase") ||
+      record.pdfUrl.includes("googleapis");
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to download PDF: ${response.status} ${response.statusText}`
-      );
+    let fetchUrl = record.pdfUrl;
+
+    // Handle Firebase Storage URLs differently
+    if (isFirebaseUrl) {
+      console.log("🔥 Firebase URL detected, using optimized approach");
+
+      // For Firebase URLs, we need to handle CORS properly
+      // Try to get the file using Firebase SDK instead of fetch
+      try {
+        // Import Firebase Storage functions dynamically to avoid circular dependencies
+        const { ref, getDownloadURL } = await import("firebase/storage");
+        const { storage } = await import("src/config/firebase");
+
+        // Extract the file path from the URL
+        const urlObj = new URL(record.pdfUrl);
+        const pathSegments = urlObj.pathname.split("/");
+        const filePath = pathSegments
+          .slice(pathSegments.indexOf("o") + 1)
+          .join("/");
+
+        const decodedPath = decodeURIComponent(filePath);
+        const storageRef = ref(storage, decodedPath);
+
+        console.log("🔄 Getting fresh download URL from Firebase...");
+        const freshUrl = await getDownloadURL(storageRef);
+
+        // Use the fresh URL for fetching
+        fetchUrl = freshUrl;
+        console.log("✅ Fresh Firebase URL obtained:", freshUrl);
+      } catch (firebaseError) {
+        console.log(
+          "⚠️ Could not get fresh Firebase URL, using original:",
+          firebaseError
+        );
+        // Continue with original URL
+      }
     }
 
-    const blob = await response.blob();
+    // Download the file first to get the actual content
+    console.log("🔄 Downloading PDF file for sharing...");
+    const blob = await downloadFileWithCORS(fetchUrl);
     console.log("📄 Original blob type:", blob.type, "Size:", blob.size);
 
     // Create proper PDF blob and file
@@ -181,6 +210,29 @@ const handleSharePDF = async (record: TableRecord) => {
     console.error("❌ Complete error in share process:", err);
     console.error("Error stack:", err.stack);
     message.destroy();
+
+    // Check if it's a CORS error or network error
+    if (
+      err.message.includes("CORS") ||
+      err.message.includes("Failed to fetch") ||
+      err.message.includes("NetworkError")
+    ) {
+      console.log(
+        "🚫 CORS/Network error detected, trying alternative approach"
+      );
+
+      // Try alternative sharing method
+      try {
+        await handleAlternativeShare(record);
+        return;
+      } catch (altError) {
+        console.error("❌ Alternative sharing also failed:", altError);
+        message.error(
+          "فشل في تحميل الملف. يرجى المحاولة مرة أخرى أو فتح الملف في نافذة جديدة"
+        );
+      }
+    }
+
     message.error("حدث خطأ أثناء تحضير الملف للمشاركة");
 
     // Last resort: open in new tab
@@ -191,6 +243,160 @@ const handleSharePDF = async (record: TableRecord) => {
       console.error("❌ Failed to open PDF:", openError);
     }
   }
+};
+
+// Helper function to download file with CORS support
+const downloadFileWithCORS = async (url: string): Promise<Blob> => {
+  // Check if this is a Firebase Storage URL
+  const isFirebaseUrl = url.includes("firebase") || url.includes("googleapis");
+
+  if (isFirebaseUrl) {
+    try {
+      // Use Firebase SDK to get the file directly as blob
+      const { ref, getDownloadURL, getBytes } = await import(
+        "firebase/storage"
+      );
+      const { storage } = await import("src/config/firebase");
+
+      // Extract the file path from the URL
+      const urlObj = new URL(url);
+      const pathSegments = urlObj.pathname.split("/");
+      const filePath = pathSegments
+        .slice(pathSegments.indexOf("o") + 1)
+        .join("/");
+
+      const decodedPath = decodeURIComponent(filePath);
+      const storageRef = ref(storage, decodedPath);
+
+      console.log("🔄 Getting file directly from Firebase Storage...");
+
+      // Try getBytes first (completely bypasses CORS)
+      try {
+        console.log("🔄 Attempting to get file bytes directly...");
+        const bytes = await getBytes(storageRef);
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        console.log("✅ File downloaded successfully via getBytes");
+        return blob;
+      } catch (bytesError) {
+        console.log(
+          "⚠️ getBytes failed, trying getDownloadURL + XHR:",
+          bytesError
+        );
+
+        // Fallback to getDownloadURL + XHR
+        const downloadURL = await getDownloadURL(storageRef);
+
+        // Use XMLHttpRequest instead of fetch to avoid CORS issues
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("GET", downloadURL, true);
+          xhr.responseType = "blob";
+
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              console.log("✅ File downloaded successfully via XHR");
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+          };
+
+          xhr.onerror = function () {
+            reject(new Error("Network error occurred"));
+          };
+
+          xhr.send();
+        });
+      }
+    } catch (firebaseError) {
+      console.log(
+        "⚠️ Firebase SDK approach failed, trying alternative methods:",
+        firebaseError
+      );
+
+      // Try with modified URL parameters
+      try {
+        const urlObj = new URL(url);
+        urlObj.searchParams.set("alt", "media");
+        const modifiedUrl = urlObj.toString();
+        console.log("🔄 Trying with alt=media parameter via XHR:", modifiedUrl);
+
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("GET", modifiedUrl, true);
+          xhr.responseType = "blob";
+
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              console.log(
+                "✅ File downloaded successfully via XHR with alt=media"
+              );
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+          };
+
+          xhr.onerror = function () {
+            reject(new Error("Network error occurred with alt=media"));
+          };
+
+          xhr.send();
+        });
+      } catch (modifiedError) {
+        console.log(
+          "⚠️ Modified URL also failed, trying original URL via XHR:",
+          modifiedError
+        );
+
+        // Try with original URL using XHR
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("GET", url, true);
+          xhr.responseType = "blob";
+
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              console.log(
+                "✅ File downloaded successfully via XHR with original URL"
+              );
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+          };
+
+          xhr.onerror = function () {
+            reject(new Error("Network error occurred with original URL"));
+          };
+
+          xhr.send();
+        });
+      }
+    }
+  }
+
+  // For non-Firebase URLs, use XHR as well for consistency
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.responseType = "blob";
+
+    xhr.onload = function () {
+      if (xhr.status === 200) {
+        console.log("✅ File downloaded successfully via XHR");
+        resolve(xhr.response);
+      } else {
+        reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+      }
+    };
+
+    xhr.onerror = function () {
+      reject(new Error("Network error occurred"));
+    };
+
+    xhr.send();
+  });
 };
 
 // Helper function to download file
@@ -219,36 +425,8 @@ const handleAlternativeShare = async (record: TableRecord) => {
   try {
     message.loading("جاري تحضير الملف...", 0);
 
-    // For Firebase URLs, we might need to handle them differently
-    let fetchUrl = record.pdfUrl;
-
-    // If it's a Firebase URL, ensure we have the right parameters
-    if (
-      record.pdfUrl.includes("firebase") ||
-      record.pdfUrl.includes("googleapis")
-    ) {
-      // Add token if needed or ensure proper CORS headers
-      const url = new URL(record.pdfUrl);
-      url.searchParams.set("alt", "media"); // This helps with Firebase Storage
-      fetchUrl = url.toString();
-      console.log("🔥 Using Firebase-optimized URL:", fetchUrl);
-    }
-
-    const response = await fetch(fetchUrl, {
-      method: "GET",
-      headers: {
-        Accept: "application/pdf, */*",
-        "Cache-Control": "no-cache",
-      },
-      mode: "cors",
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+    // Use the improved downloadFileWithCORS function which handles Firebase URLs properly
+    const blob = await downloadFileWithCORS(record.pdfUrl);
     const fileName = `تقرير_${record.requestNumber}.pdf`;
 
     console.log("📁 File prepared:", {
